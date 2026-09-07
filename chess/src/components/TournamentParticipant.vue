@@ -53,7 +53,48 @@ const joinTournament = () => {
 }
 
 const currentMatches = computed(() => tournament.value?.matches.filter(match => match.round === tournament.value?.currentRound) ?? [])
-const standings = computed(() => [...(tournament.value?.players ?? [])].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)))
+const standings = computed(() => {
+  const currentTournament = tournament.value
+  if (!currentTournament) return []
+
+  const map = new Map(currentTournament.players.map(player => [player.id, { ...player, buchholz: 0 }]))
+
+  for (const match of currentTournament.matches) {
+    if (!match.result || match.bye) continue
+    const white = map.get(match.white)
+    const black = map.get(match.black)
+    if (!white || !black) continue
+
+    if (match.result === 'white') {
+      white.score += 1
+      white.wins += 1
+      black.losses += 1
+    } else if (match.result === 'black') {
+      black.score += 1
+      black.wins += 1
+      white.losses += 1
+    } else {
+      white.score += 0.5
+      black.score += 0.5
+      white.draws += 1
+      black.draws += 1
+    }
+  }
+
+  for (const match of currentTournament.matches) {
+    if (!match.result || match.bye) continue
+    const white = map.get(match.white)
+    const black = map.get(match.black)
+    if (white && black) {
+      white.buchholz += black.score
+      black.buchholz += white.score
+    }
+  }
+
+  return [...map.values()].sort((a, b) =>
+    b.score - a.score || b.buchholz - a.buchholz || b.wins - a.wins || a.name.localeCompare(b.name)
+  )
+})
 
 const syncTournament = () => {
   if (!tournament.value) return
