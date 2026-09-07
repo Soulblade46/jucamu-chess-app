@@ -36,12 +36,28 @@ const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments.
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
 
+const tournamentCode = () => {
+  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  do {
+    code = Array.from({ length: 6 }, () => characters[Math.floor(Math.random() * characters.length)]).join('')
+  } while (tournaments.value.some(tournament => tournament.id === code))
+  return code
+}
+
 const load = () => {
   try {
-    tournaments.value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    tournaments.value = Array.isArray(saved) ? saved : []
   } catch {
     tournaments.value = []
   }
+}
+
+const syncTournaments = () => {
+  const selectedId = currentTournamentId.value
+  load()
+  if (selectedId && tournaments.value.some(t => t.id === selectedId)) currentTournamentId.value = selectedId
 }
 
 const addPlayer = () => {
@@ -139,24 +155,32 @@ const generateRound = (t: Tournament, round: number) => {
 }
 
 const createTournament = () => {
-  if (draftPlayers.value.length < 2) return showToast('Inserisci almeno 2 concorrenti')
-
   const t: Tournament = {
-    id: uid(),
+    id: tournamentCode(),
     name: tour.name.trim() || 'Torneo',
     mode: tour.mode,
     rounds: tour.mode === 'round-robin' ? Math.max(1, draftPlayers.value.length - 1) : Math.max(1, tour.rounds),
     players: draftPlayers.value.map(p => ({ ...p })),
     matches: [],
     currentRound: 0,
-    started: true
+    started: false
   }
 
   tournaments.value.unshift(t)
   currentTournamentId.value = t.id
-  generateRound(t, 1)
   save()
   showToast('Torneo creato')
+}
+
+const startTournament = () => {
+  const t = currentTournament.value
+  if (!t || t.started) return
+  if (t.players.length < 2) return showToast('Servono almeno 2 partecipanti')
+
+  t.started = true
+  generateRound(t, 1)
+  save()
+  showToast('Torneo avviato')
 }
 
 const openTournament = (id: string) => {
@@ -196,7 +220,10 @@ const resetTournament = () => {
 
 const nameById = (id: string) => currentTournament.value?.players.find(p => p.id === id)?.name || '—'
 
-onMounted(load)
+onMounted(() => {
+  load()
+  window.addEventListener('storage', syncTournaments)
+})
 </script>
 
 <template>
@@ -228,11 +255,18 @@ onMounted(load)
 
     <div v-else-if="currentTournament" class="tournament-content">
       <div class="tournament-head panel">
-        <div><span class="eyebrow">{{ modeLabel(currentTournament.mode) }}</span><h3>{{ currentTournament.name }}</h3></div>
-        <div class="round-badge">Turno <strong>{{ currentTournament.currentRound }}</strong> / {{ currentTournament.rounds }}</div>
+        <div><span class="eyebrow">{{ modeLabel(currentTournament.mode) }}</span><h3>{{ currentTournament.name }}</h3><small class="tournament-code">Codice: {{ currentTournament.id }}</small></div>
+        <div v-if="currentTournament.started" class="round-badge">Turno <strong>{{ currentTournament.currentRound }}</strong> / {{ currentTournament.rounds }}</div>
+        <button v-else class="primary" @click="startTournament">Avvia torneo →</button>
       </div>
 
-      <TournamentRound
+      <div v-if="!currentTournament.started" class="panel waiting-panel">
+        <span class="eyebrow">IN ATTESA</span>
+        <h3>Il torneo non è ancora iniziato</h3>
+        <p>{{ currentTournament.players.length }} partecipanti iscritti. Condividi il codice e avvia il primo turno quando sei pronto.</p>
+      </div>
+
+      <TournamentRound v-else
         :matches="currentMatches"
         :name-by-id="nameById"
         :all-results="allRoundResults"

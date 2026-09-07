@@ -36,7 +36,7 @@ defineEmits<{
     <div class="panel players-card">
       <span class="step">02</span><h3>Inserisci i giocatori</h3>
       <div class="add-player"><input :value="playerInput" placeholder="Nome concorrente" @input="$emit('update:playerInput', ($event.target as HTMLInputElement).value)" @keyup.enter="$emit('addPlayer')" /><button class="primary" @click="$emit('addPlayer')">+ Aggiungi</button></div>
-      <div class="players-list"><div v-for="(player, index) in draftPlayers" :key="player.id" class="player-row"><span>{{ index + 1 }}</span><b>{{ player.name }}</b><button @click="$emit('removePlayer', player.id)">×</button></div><div v-if="!draftPlayers.length" class="empty">Aggiungi almeno due concorrenti.</div></div>
+      <div class="players-list"><div v-for="(player, index) in draftPlayers" :key="player.id" class="player-row"><span>{{ index + 1 }}</span><b>{{ player.name }}</b><button @click="$emit('removePlayer', player.id)">×</button></div><div v-if="!draftPlayers.length" class="empty">Puoi aggiungere partecipanti anche dopo la creazione.</div></div>
       <button class="primary wide" @click="$emit('createTournament')">Crea torneo · {{ draftPlayers.length }} giocatori</button>
     </div>
     <div v-if="tournaments.length" class="panel saved-card"><span class="step">03</span><h3>Apri un torneo salvato</h3><div v-for="tournament in tournaments" :key="tournament.id" class="saved-row"><button @click="$emit('openTournament', tournament.id)"><b>{{ tournament.name }}</b><small>{{ modeLabel(tournament.mode) }} · {{ tournament.players.length }} giocatori</small></button><button class="delete" @click="$emit('deleteTournament', tournament.id)">×</button></div></div>

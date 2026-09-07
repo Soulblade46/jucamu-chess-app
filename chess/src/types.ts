@@ -1,4 +1,4 @@
-export type Screen = 'home' | 'timer' | 'tournament'
+export type Screen = 'home' | 'timer' | 'tournament' | 'participant'
 
 export type Mode = 'round-robin' | 'swiss' | 'knockout'
 export type Result = 'white' | 'black' | 'draw'

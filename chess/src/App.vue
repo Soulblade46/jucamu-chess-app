@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { registerSW } from 'virtual:pwa-register'
 import ChessTimer from './components/ChessTimer.vue'
 import TournamentManager from './components/TournamentManager.vue'
+import TournamentParticipant from './components/TournamentParticipant.vue'
+import './participant.css'
 import type { Screen } from './types'
 
 const screen = ref<Screen>('home')
@@ -71,6 +73,12 @@ const applyUpdate = () => {
             <span class="arrow">→</span>
           </button>
 
+          <button class="menu-card participant-card" @click="screen = 'participant'">
+            <span class="card-icon">♟</span>
+            <span><b>Partecipa a un torneo</b><small>Accedi con il codice e aggiungi il tuo nome</small></span>
+            <span class="arrow">→</span>
+          </button>
+
           <button class="menu-card exit-card" @click="closeApp">
             <span class="card-icon">↪</span>
             <span><b>Uscita</b><small>Chiudi l'app quando il sistema lo permette</small></span>
@@ -80,7 +88,8 @@ const applyUpdate = () => {
       </section>
 
       <ChessTimer v-else-if="screen === 'timer'" />
-      <TournamentManager v-else />
+      <TournamentManager v-else-if="screen === 'tournament'" />
+      <TournamentParticipant v-else />
     </main>
 
     <footer><span>♟</span> PWA · Offline · Dati salvati sul dispositivo <span>v{{ appVersion }}</span></footer>
