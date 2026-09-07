@@ -80,6 +80,28 @@ const addPlayer = () => {
   tour.playerInput = ''
 }
 
+const addCurrentPlayer = () => {
+  const tournament = currentTournament.value
+  const name = tour.playerInput.trim()
+  if (!tournament || tournament.started || !name) return
+  if (tournament.players.some(player => player.name.toLowerCase() === name.toLowerCase())) {
+    return showToast('Nome già presente')
+  }
+
+  tournament.players.push({
+    id: uid(),
+    name,
+    score: 0,
+    buchholz: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0
+  })
+  tour.playerInput = ''
+  save()
+  showToast('Partecipante aggiunto')
+}
+
 const removeDraftPlayer = (id: string) => {
   draftPlayers.value = draftPlayers.value.filter(p => p.id !== id)
 }
@@ -177,6 +199,7 @@ const startTournament = () => {
   if (!t || t.started) return
   if (t.players.length < 2) return showToast('Servono almeno 2 partecipanti')
 
+  if (t.mode === 'round-robin') t.rounds = Math.max(1, t.players.length - 1)
   t.started = true
   generateRound(t, 1)
   save()
@@ -264,6 +287,10 @@ onMounted(() => {
         <span class="eyebrow">IN ATTESA</span>
         <h3>Il torneo non è ancora iniziato</h3>
         <p>{{ currentTournament.players.length }} partecipanti iscritti. Condividi il codice e avvia il primo turno quando sei pronto.</p>
+        <div class="add-player manager-add-player">
+          <input v-model="tour.playerInput" placeholder="Nome nuovo partecipante" @keyup.enter="addCurrentPlayer" />
+          <button class="primary" @click="addCurrentPlayer">+ Aggiungi</button>
+        </div>
       </div>
 
       <TournamentRound v-else

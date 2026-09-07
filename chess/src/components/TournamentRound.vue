@@ -18,16 +18,16 @@ defineEmits<{ setResult: [match: Match, result: Result]; nextRound: [] }>()
   display: flex;
   align-items: end;
   justify-content: space-between;
-  margin: 8px 0 14px;
+  margin: 0.5rem 0 0.875rem;
 }
 
 .section-heading h3 {
-  margin: 6px 0 0;
-  font-size: 22px;
+  margin: 0.375rem 0 0;
+  font-size: 1.375rem;
 }
 
 .section-count {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 </style>
