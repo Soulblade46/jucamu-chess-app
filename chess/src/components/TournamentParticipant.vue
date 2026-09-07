@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { Player, Tournament } from '../types'
+import type { Match, Player, Result, Tournament } from '../types'
 import TournamentStandings from './TournamentStandings.vue'
 
 const STORAGE_KEY = 'chessapp.tournaments.v1'
@@ -8,6 +8,7 @@ const tournamentCode = ref('')
 const playerName = ref('')
 const tournament = ref<Tournament | null>(null)
 const joinedName = ref('')
+const joinedPlayerId = ref('')
 const message = ref('')
 
 const loadTournaments = (): Tournament[] => {
@@ -49,10 +50,41 @@ const joinTournament = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments))
   tournament.value = found
   joinedName.value = name
+  joinedPlayerId.value = player.id
   message.value = ''
 }
 
 const currentMatches = computed(() => tournament.value?.matches.filter(match => match.round === tournament.value?.currentRound) ?? [])
+const playerMatch = computed(() => currentMatches.value.find(match => match.white === joinedPlayerId.value || match.black === joinedPlayerId.value))
+
+const saveTournament = () => {
+  if (!tournament.value) return
+  const tournaments = loadTournaments()
+  const index = tournaments.findIndex(item => item.id === tournament.value?.id)
+  if (index >= 0) {
+    tournaments[index] = tournament.value
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments))
+  }
+}
+
+const setResult = (match: Match, result: 'win' | 'draw' | 'loss') => {
+  if (match.white !== joinedPlayerId.value && match.black !== joinedPlayerId.value) return
+
+  const playerIsWhite = match.white === joinedPlayerId.value
+  const results: Record<'win' | 'draw' | 'loss', Result> = playerIsWhite
+    ? { win: 'white', draw: 'draw', loss: 'black' }
+    : { win: 'black', draw: 'draw', loss: 'white' }
+
+  match.result = results[result]
+  saveTournament()
+}
+
+const resultLabel = (match: Match) => {
+  if (!match.result) return ''
+  if (match.result === 'draw') return 'Pareggio registrato'
+  const playerWon = match.result === 'white' ? match.white === joinedPlayerId.value : match.black === joinedPlayerId.value
+  return playerWon ? 'Vittoria registrata' : 'Sconfitta registrata'
+}
 const standings = computed(() => {
   const currentTournament = tournament.value
   if (!currentTournament) return []
@@ -118,7 +150,7 @@ onMounted(() => window.addEventListener('storage', syncTournament))
     <div v-else class="participant-content">
       <div class="tournament-head panel"><div><span class="eyebrow">{{ tournament.name }}</span><h3>Ciao, {{ joinedName }}</h3><small class="tournament-code">Codice: {{ tournament.id }}</small></div><div v-if="tournament.started" class="round-badge">Turno <strong>{{ tournament.currentRound }}</strong> / {{ tournament.rounds }}</div><span v-else class="round-badge">In attesa dell'avvio</span></div>
       <div v-if="!tournament.started" class="panel participant-matches waiting-panel"><span class="eyebrow">ISCRIZIONE COMPLETATA</span><h3>Attendiamo l'avvio del torneo</h3><p>Il gestore sta raccogliendo i partecipanti. Gli abbinamenti appariranno qui quando inizierà il primo turno.</p></div>
-      <div v-else class="panel participant-matches"><div class="section-title"><span>TURNO CORRENTE</span><span>{{ currentMatches.length }} PARTITE</span></div><div v-for="match in currentMatches" :key="match.id" class="participant-match"><span>{{ tournament.players.find(player => player.id === match.white)?.name || '—' }}</span><b>{{ match.bye ? 'BYE' : 'vs' }}</b><span>{{ match.bye ? '' : tournament.players.find(player => player.id === match.black)?.name || '—' }}</span></div><div v-if="!currentMatches.length" class="empty">Il prossimo turno non è ancora disponibile.</div></div>
+      <div v-else class="panel participant-matches"><div class="section-title"><span>TURNO CORRENTE</span><span>{{ currentMatches.length }} PARTITE</span></div><div v-for="match in currentMatches" :key="match.id" class="participant-match"><div><span>{{ tournament.players.find(player => player.id === match.white)?.name || '—' }}</span><b>{{ match.bye ? 'BYE' : 'vs' }}</b><span>{{ match.bye ? '' : tournament.players.find(player => player.id === match.black)?.name || '—' }}</span></div><div v-if="match.id === playerMatch?.id && !match.bye" class="participant-result"><button :class="{ chosen: match.result === (match.white === joinedPlayerId ? 'white' : 'black') }" @click="setResult(match, 'win')">Vittoria</button><button :class="{ chosen: match.result === 'draw' }" @click="setResult(match, 'draw')">Pareggio</button><button :class="{ chosen: match.result === (match.white === joinedPlayerId ? 'black' : 'white') }" @click="setResult(match, 'loss')">Sconfitta</button><small>{{ resultLabel(match) }}</small></div><small v-else-if="match.result" class="match-result">Risultato registrato</small></div><div v-if="!currentMatches.length" class="empty">Il prossimo turno non è ancora disponibile.</div></div>
       <TournamentStandings :standings="standings" />
     </div>
   </section>
