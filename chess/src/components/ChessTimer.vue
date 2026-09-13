@@ -108,7 +108,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="timer.expired && !isFullscreen" class="timeout-overlay">
+    <div v-if="timer.expired" class="timeout-overlay">
       <div class="timeout-card">
         <div class="burst">⌛</div>
         <span class="eyebrow">TEMPO SCADUTO</span>
