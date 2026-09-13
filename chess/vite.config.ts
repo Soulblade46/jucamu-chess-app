@@ -18,7 +18,7 @@ export default defineConfig({
         description: 'Timer scacchi e gestione tornei, anche offline.',
         lang: 'it',
         start_url: '/',
-        display: 'fullscreen',
+        display: 'standalone',
         theme_color: '#06111f',
         background_color: '#06111f',
         icons: [
