@@ -13,8 +13,8 @@ export default defineConfig({
       },
       manifest: {
         id: '/',
-        name: 'JucamuChessApp',
-        short_name: 'JucamuChessApp',
+        name: 'JucamuChess',
+        short_name: 'JucamuChess',
         description: 'Timer scacchi e gestione tornei, anche offline.',
         lang: 'it',
         start_url: '/',

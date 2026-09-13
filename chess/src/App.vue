@@ -43,9 +43,9 @@ const applyUpdate = () => {
     <header class="topbar">
       <button v-if="screen !== 'home'" class="icon-btn" @click="screen = 'home'" aria-label="Indietro">←</button>
       <div class="brand">
-        <span class="brand-mark">♛</span>
+        <img class="brand-mark" src="/jucamu_icon.png" alt="Jucamu" />
         <div>
-          <strong>ChessApp</strong>
+          <strong>JucamuChess</strong>
           <small>Tornei · Timer · Offline</small>
         </div>
       </div>
