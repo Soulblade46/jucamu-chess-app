@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 const timer = reactive({
   minutes: 5,
@@ -14,7 +14,6 @@ const timer = reactive({
 
 let timerId: number | undefined
 const timerPresets = [1, 3, 5, 10, 15, 30]
-const timerRoot = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.max(0, seconds % 60).toString().padStart(2, '0')}`
@@ -62,20 +61,8 @@ const pauseTimer = () => {
   window.clearInterval(timerId)
 }
 
-const toggleFullscreen = async () => {
-  try {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen()
-    } else {
-      await timerRoot.value?.requestFullscreen()
-    }
-  } catch {
-    isFullscreen.value = false
-  }
-}
-
-const updateFullscreenState = () => {
-  isFullscreen.value = document.fullscreenElement === timerRoot.value
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
 }
 
 const pressClock = (side: 'white' | 'black') => {
@@ -90,15 +77,10 @@ watch(
   () => resetTimer()
 )
 
-onMounted(() => document.addEventListener('fullscreenchange', updateFullscreenState))
-onUnmounted(() => {
-  window.clearInterval(timerId)
-  document.removeEventListener('fullscreenchange', updateFullscreenState)
-})
 </script>
 
 <template>
-  <section ref="timerRoot" class="page page-enter" :class="{ 'fullscreen-mode': isFullscreen }">
+  <section class="page page-enter" :class="{ 'fullscreen-mode': isFullscreen }">
     <button v-if="isFullscreen" class="fullscreen-back" aria-label="Esci da fullscreen" @click="toggleFullscreen">←</button>
     <div v-if="!isFullscreen" class="page-heading">
       <div><span class="eyebrow">PARTITA</span><h2>Timer Scacchi</h2></div>
@@ -165,7 +147,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.fullscreen-mode:fullscreen {
+.fullscreen-mode {
   position: relative;
   display: block;
   width: 100vw;
@@ -175,7 +157,7 @@ onUnmounted(() => {
   background: #050d18;
 }
 
-.fullscreen-mode:fullscreen .timer-board {
+.fullscreen-mode .timer-board {
   position: absolute;
   inset: 0;
   display: grid;
@@ -205,7 +187,7 @@ onUnmounted(() => {
   font-size: 1.5rem;
 }
 
-.fullscreen-mode:fullscreen .vs {
+.fullscreen-mode .vs {
   display: block;
   grid-row: 2;
   width: 100%;
@@ -214,26 +196,26 @@ onUnmounted(() => {
   background: #050d18;
 }
 
-.fullscreen-mode:fullscreen .black-clock {
+.fullscreen-mode .black-clock {
   grid-row: 1;
   transform: rotate(180deg);
 }
 
-.fullscreen-mode:fullscreen .white-clock {
+.fullscreen-mode .white-clock {
   grid-row: 3;
 }
 
-.fullscreen-mode:fullscreen .clock {
+.fullscreen-mode .clock {
   height: 100%;
   min-height: 0;
   border-radius: 0;
 }
 
-.fullscreen-mode:fullscreen .clock strong {
+.fullscreen-mode .clock strong {
   font-size: clamp(4rem, 14vw, 10rem);
 }
 
-.fullscreen-mode:fullscreen .timer-buttons {
+.fullscreen-mode .timer-buttons {
   position: absolute;
   top: 50%;
   right: 1rem;
