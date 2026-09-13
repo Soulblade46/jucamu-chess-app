@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 const timer = reactive({
   minutes: 5,
@@ -14,6 +14,8 @@ const timer = reactive({
 
 let timerId: number | undefined
 const timerPresets = [1, 3, 5, 10, 15, 30]
+const timerRoot = ref<HTMLElement | null>(null)
+const isFullscreen = ref(false)
 
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.max(0, seconds % 60).toString().padStart(2, '0')}`
 
@@ -47,12 +49,33 @@ const tick = () => {
   }
 }
 
-const startTimer = () => {
+const playTimer = () => {
   if (timer.expired) return
-  timer.active = !timer.active
+  timer.active = true
   timer.lastTick = performance.now()
   window.clearInterval(timerId)
-  if (timer.active) timerId = window.setInterval(tick, 100)
+  timerId = window.setInterval(tick, 100)
+}
+
+const pauseTimer = () => {
+  timer.active = false
+  window.clearInterval(timerId)
+}
+
+const toggleFullscreen = async () => {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen()
+    } else {
+      await timerRoot.value?.requestFullscreen()
+    }
+  } catch {
+    isFullscreen.value = false
+  }
+}
+
+const updateFullscreenState = () => {
+  isFullscreen.value = document.fullscreenElement === timerRoot.value
 }
 
 const pressClock = (side: 'white' | 'black') => {
@@ -66,16 +89,26 @@ watch(
   () => [timer.minutes, timer.increment],
   () => resetTimer()
 )
+
+onMounted(() => document.addEventListener('fullscreenchange', updateFullscreenState))
+onUnmounted(() => {
+  window.clearInterval(timerId)
+  document.removeEventListener('fullscreenchange', updateFullscreenState)
+})
 </script>
 
 <template>
-  <section class="page page-enter">
-    <div class="page-heading">
+  <section ref="timerRoot" class="page page-enter" :class="{ 'fullscreen-mode': isFullscreen }">
+    <button v-if="isFullscreen" class="fullscreen-back" aria-label="Esci da fullscreen" @click="toggleFullscreen">←</button>
+    <div v-if="!isFullscreen" class="page-heading">
       <div><span class="eyebrow">PARTITA</span><h2>Timer Scacchi</h2></div>
-      <button class="ghost" @click="resetTimer">Reset</button>
+      <div class="timer-heading-actions">
+        <button class="ghost" @click="resetTimer">Reset</button>
+        <button class="ghost" aria-label="Attiva fullscreen" @click="toggleFullscreen">⛶ Fullscreen</button>
+      </div>
     </div>
 
-    <div v-if="timer.expired" class="timeout-overlay">
+    <div v-if="timer.expired && !isFullscreen" class="timeout-overlay">
       <div class="timeout-card">
         <div class="burst">⌛</div>
         <span class="eyebrow">TEMPO SCADUTO</span>
@@ -101,7 +134,7 @@ watch(
       </button>
     </div>
 
-    <div class="timer-controls panel">
+    <div v-if="!isFullscreen" class="timer-controls panel">
       <div class="field">
         <label>Tempo iniziale</label>
         <div class="chips">
@@ -123,11 +156,92 @@ watch(
     </div>
 
     <div class="timer-buttons">
-      <button class="round-btn" @click="resetTimer">↻</button>
-      <button class="play-btn" @click="startTimer">{{ timer.active ? 'Ⅱ' : '▶' }}</button>
-      <button class="round-btn" @click="timer.active = false">■</button>
+      <button class="play-btn" :disabled="timer.active || !!timer.expired" aria-label="Avvia timer" @click="playTimer">▶</button>
+      <button class="round-btn" :disabled="!timer.active" aria-label="Metti in pausa" @click="pauseTimer">Ⅱ</button>
     </div>
 
-    <div class="hint">Premi il grande orologio del giocatore di turno per passare la mossa.</div>
+    <div v-if="!isFullscreen" class="hint">Premi il grande orologio del giocatore di turno per passare la mossa.</div>
   </section>
 </template>
+
+<style scoped>
+.fullscreen-mode:fullscreen {
+  position: relative;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  background: #050d18;
+}
+
+.fullscreen-mode:fullscreen .timer-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 3.5rem 1fr;
+  gap: 0;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.fullscreen-back {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  z-index: 1;
+  transform: translateY(-50%);
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.75rem;
+  background: #0b1d30;
+  color: #d8e9f7;
+  font-size: 1.5rem;
+}
+
+.fullscreen-mode:fullscreen .vs {
+  display: block;
+  grid-row: 2;
+  width: 100%;
+  height: 100%;
+  color: transparent;
+  background: #050d18;
+}
+
+.fullscreen-mode:fullscreen .black-clock {
+  grid-row: 1;
+  transform: rotate(180deg);
+}
+
+.fullscreen-mode:fullscreen .white-clock {
+  grid-row: 3;
+}
+
+.fullscreen-mode:fullscreen .clock {
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.fullscreen-mode:fullscreen .clock strong {
+  font-size: clamp(4rem, 14vw, 10rem);
+}
+
+.fullscreen-mode:fullscreen .timer-buttons {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  margin: 0;
+  transform: translateY(-50%);
+}
+</style>
